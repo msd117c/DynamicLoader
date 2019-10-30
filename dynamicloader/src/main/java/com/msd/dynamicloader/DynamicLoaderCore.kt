@@ -75,7 +75,7 @@ class DynamicLoaderCore {
             activitiesMap[activity::class.java.name] = HashMap()
         }
         activitiesMap[activity::class.java.name] = HashMap()
-        lifecycleObserver = LoaderLifecycle(activitiesMap, activity)
+        lifecycleObserver = LoaderLifecycle(activitiesMap, loadingShowing, activity)
         activity.lifecycle.addObserver(lifecycleObserver)
         setViews(activity, views)
     }
@@ -511,6 +511,7 @@ class DynamicLoaderCore {
 
     internal class LoaderLifecycle(
         private var activitiesMap: HashMap<String, HashMap<View, RelativeLayout>>,
+        private var loadShowing: HashMap<Pair<String, Int>, RelativeLayout>,
         private var activity: AppCompatActivity
     ) : LifecycleObserver {
 
@@ -527,6 +528,12 @@ class DynamicLoaderCore {
                     }
                 }
                 if (activity.isFinishing) {
+                    val copyOfMap = loadShowing.clone() as HashMap<Pair<String, Int>, RelativeLayout>
+                    for (entry: Map.Entry<Pair<String, Int>, RelativeLayout> in copyOfMap) {
+                        if (entry.key.first == activityName) {
+                            loadShowing.remove(entry.key)
+                        }
+                    }
                     activitiesMap[activityName]?.clear()
                     activitiesMap.remove(activityName)
 
