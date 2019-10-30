@@ -42,7 +42,7 @@ class DynamicLoaderCore {
             activitiesMap[activity::class.java.name] = HashMap()
         }
         val loadingMap = activitiesMap[activity::class.java.name]
-        if (loadingMap != null && backgroundColor != null && progressColor != null) {
+        if (loadingMap != null) {
             if (!loadingMap.containsKey(view) || loadingMap[view] == null) {
                 loadingMap[view] = RelativeLayout(view.context)
             }
@@ -65,7 +65,7 @@ class DynamicLoaderCore {
             activitiesMap[activity::class.java.name] = HashMap()
         }
         val loadingMap = activitiesMap[activity::class.java.name]
-        if (loadingMap != null && backgroundColor != null && progressColor != null) {
+        if (loadingMap != null) {
             for (entry: Map.Entry<View, RelativeLayout> in loadingMap) {
                 val view = entry.key
                 val relativeLayout = entry.value
@@ -84,8 +84,8 @@ class DynamicLoaderCore {
         view: View,
         relativeLayout: RelativeLayout?,
         disableLoading: Boolean,
-        backgroundColor: Int,
-        progressColor: Int
+        backgroundColor: Int?,
+        progressColor: Int?
     ) {
         var loading = false
         for (v: View in (view.parent as ViewGroup).children) {
@@ -96,7 +96,7 @@ class DynamicLoaderCore {
                 loading = true
             }
         }
-        if (!loading && !disableLoading) {
+        if (!loading && !disableLoading && backgroundColor != null && progressColor != null) {
             view.post {
                 val drawable: Drawable? = view.background
                 relativeLayout?.layoutParams = view.layoutParams
