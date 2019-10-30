@@ -25,6 +25,10 @@ class DynamicLoaderCore {
 
     companion object {
         private var instance: DynamicLoaderCore? = null
+        /**
+         * This method return the running instance of DynamicLoaderCore
+         * @return DynamicLoaderCore instance
+         */
         fun getInstance(): DynamicLoaderCore {
             if (instance == null) {
                 instance = DynamicLoaderCore()
@@ -33,9 +37,255 @@ class DynamicLoaderCore {
         }
     }
 
-    var activitiesMap = HashMap<String, HashMap<View, RelativeLayout>>()
-    lateinit var lifecycleObserver: LifecycleObserver
+    /**
+     * This object will hold all activities and it's views references
+     */
+    private var activitiesMap = HashMap<String, HashMap<View, RelativeLayout>>()
+    
+    /**
+     * This attribute will be used to handle lifecycle changes
+     */
+    private lateinit var lifecycleObserver: LifecycleObserver
+
+    /**
+     * This object will retrieve any resource from current activity's context
+     */
     private val themeUtils = ThemeUtils()
+
+    /**
+     * This method initialize the dynamic loader for passed activity
+     * It must be called in onCreate method. You can set here the views you want to set loading or
+     * do it later.
+     * @param activity The current created activity
+     * @param views Array of views you want to set loading during activity's lifecycle. It could be not setted here
+     */
+    @Throws(LoaderAlreadyInit::class)
+    fun init(activity: AppCompatActivity, views: Array<View>? = null) {
+        if (activitiesMap.containsKey(activity::class.java.name)) {
+            throw LoaderAlreadyInit(
+                if (activity is LoaderAppCompatActivity) {
+                    "This activity is extending LoaderAppCompatActivity. Calling init(...) is not needed"
+                } else {
+                    "This activity was already initialized. You have to call init(...) only once"
+                }
+            )
+        }
+        activitiesMap[activity::class.java.name] = HashMap()
+        lifecycleObserver = LoaderLifecycle(activitiesMap, activity::class.java.name)
+        activity.lifecycle.addObserver(lifecycleObserver)
+        setViews(activity, views)
+    }
+
+    /**
+     * Call this method if you want to overwrite current activity's views to show loading views over them.
+     * This method is useful if you have already initialized your activity and you want to set views after
+     * something happened, for instance, an asynchronous work
+     * @param activity Current activity
+     * @param views Array of views to show loading view over them
+     */
+    fun setViews(activity: AppCompatActivity, views: Array<View>? = null) {
+        views?.let { nonNullViews ->
+            val hashMap = HashMap<View, RelativeLayout>()
+            for (view: View in nonNullViews) {
+                if (!hashMap.containsKey(view)) {
+                    hashMap[view] = RelativeLayout(activity)
+                }
+            }
+            activitiesMap[activity::class.java.name] = hashMap
+        }
+    }
+
+    /**
+     * This method creates and add a loading view over selected item. Background and progress color
+     * are both optional. By default colorPrimaryDark and colorAccent are taken to draw the view. You
+     * can specify one, both of none of them
+     * @param activity Current activity
+     * @param view Desired view to show loading over it
+     * @param backgroundColor If not specified, colorPrimaryDark
+     * @param progressColor If not specified, colorAccent
+     */
+    fun showLoading(
+        activity: AppCompatActivity,
+        view: View,
+        backgroundColor: Int? = null,
+        progressColor: Int? = null
+    ) {
+        if (!activity.isFinishing && !activity.isDestroyed) {
+            val selectedBackgroundColor =
+                backgroundColor ?: themeUtils.resolveBackgroundColor(activity)
+            val selectedProgressColor = progressColor ?: themeUtils.resolveAccentColor(activity)
+            toggleLoading(activity, view, false, selectedBackgroundColor, selectedProgressColor)
+        }
+    }
+
+    /**
+     * This method creates and add a loading view over selected item. Background color
+     * is optional. By default colorPrimaryDark ais taken to draw the view. You
+     * must specify the animation file which you want to use and must be present on assets folder
+     * @param activity Current activity
+     * @param view Desired view to show loading over it
+     * @param backgroundColor If not specified, colorPrimaryDark
+     * @param animationName Animation json file name
+     */
+    fun showLoading(
+        activity: AppCompatActivity,
+        view: View,
+        backgroundColor: Int? = null,
+        animationName: String
+    ) {
+        if (!activity.isFinishing && !activity.isDestroyed) {
+            val selectedBackgroundColor =
+                backgroundColor ?: themeUtils.resolveBackgroundColor(activity)
+            toggleLoading(activity, view, selectedBackgroundColor, animationName)
+        }
+    }
+
+    /**
+     * This method adds loading view for specified item. Background and progress color
+     * are mandatory and must exist on colors.xml file. You
+     * must specify both of them
+     * @param activity Current activity
+     * @param view Desired view to show loading over it
+     * @param backgroundColor It must be specified and must exist on colors.xml
+     * @param progressColor It must be specified and must exist on colors.xml
+     */
+    fun showLoadingFromResources(
+        activity: AppCompatActivity,
+        view: View,
+        backgroundColor: Int,
+        progressColor: Int
+    ) {
+        val backgroundColorInt = ContextCompat.getColor(activity, backgroundColor)
+        val progressColorInt = ContextCompat.getColor(activity, progressColor)
+        showLoading(activity, view, backgroundColorInt, progressColorInt)
+    }
+
+    /**
+     * This method creates and add a loading view over selected item. You
+     * must specify the animation file which you want to use and must be present on assets folder.
+     * Background color must be present and must be on colors.xml
+     * @param activity Current activity
+     * @param backgroundColor It must be specified and must exist on colors.xml
+     * @param animationName Animation json file name
+     */
+    fun showLoadingFromResources(
+        activity: AppCompatActivity,
+        view: View, @ColorRes backgroundColor: Int,
+        animationName: String
+    ) {
+        val backgroundColorInt = ContextCompat.getColor(activity, backgroundColor)
+        showLoading(activity, view, backgroundColorInt, animationName)
+    }
+
+    /**
+     * This method adds loading views for each component set on init or setViews methods. Also
+     * independent elements added with showLoading are affected by this method. Background and progress color
+     * are both optional. By default colorPrimaryDark and colorAccent are taken to draw the view. You
+     * can specify one, both of none of them
+     * @param activity Current activity
+     * @param backgroundColor If not specified, colorPrimaryDark
+     * @param progressColor If not specified, colorAccent
+     */
+    fun showAllLoading(
+        activity: AppCompatActivity,
+        backgroundColor: Int? = null,
+        progressColor: Int? = null
+    ) {
+        if (!activity.isFinishing && !activity.isDestroyed) {
+            val backgroundColorInt = try {
+                ContextCompat.getColor(activity, backgroundColor!!)
+            } catch (e: Exception) {
+                backgroundColor
+            }
+            val progressColorInt = try {
+                ContextCompat.getColor(activity, progressColor!!)
+            } catch (e: Exception) {
+                progressColor
+            }
+            val selectedBackgroundColor =
+                backgroundColorInt ?: themeUtils.resolveBackgroundColor(activity)
+            val selectedProgressColor = progressColorInt ?: themeUtils.resolveAccentColor(activity)
+            toggleAllLoading(activity, false, selectedBackgroundColor, selectedProgressColor)
+        }
+    }
+
+    /**
+     * This method adds loading views for each component set on init or setViews methods. Also
+     * independent elements added with showLoading are affected by this method. You
+     * must specify the animation file which you want to use and must be present on assets folder
+     * @param activity Current activity
+     * @param backgroundColor If not specified, colorPrimaryDark
+     * @param animationName Animation json file name
+     */
+    fun showAllLoading(
+        activity: AppCompatActivity,
+        backgroundColor: Int? = null,
+        animationName: String
+    ) {
+        if (!activity.isFinishing && !activity.isDestroyed) {
+            val backgroundColorInt = try {
+                ContextCompat.getColor(activity, backgroundColor!!)
+            } catch (e: Exception) {
+                backgroundColor
+            }
+            val selectedBackgroundColor =
+                backgroundColorInt ?: themeUtils.resolveBackgroundColor(activity)
+            toggleAllLoading(activity, selectedBackgroundColor, animationName)
+        }
+    }
+
+    /**
+     * This method adds loading views for each component set on init or setViews methods. Also
+     * independent elements added with showLoading are affected by this method. Background and progress color
+     * are mandatory and must exist on colors.xml file. You
+     * must specify both of them
+     * @param activity Current activity
+     * @param backgroundColor It must be specified and must exist on colors.xml
+     * @param progressColor It must be specified and must exist on colors.xml
+     */
+    fun showAllLoadingFromResources(
+        activity: AppCompatActivity,
+        @ColorRes backgroundColor: Int,
+        @ColorRes progressColor: Int
+    ) {
+        showAllLoading(
+            activity,
+            ContextCompat.getColor(activity, backgroundColor),
+            ContextCompat.getColor(activity, progressColor)
+        )
+    }
+
+    /**
+     * This method remove loading view over specified item if exists.
+     * @param activity Current activity
+     * @param view Desired view to remove it's loading view
+     */
+    fun dismissLoading(activity: AppCompatActivity, view: View) {
+        if (!activity.isFinishing && !activity.isDestroyed) {
+            toggleLoading(activity, view, true)
+        }
+    }
+
+    /**
+     * This method is like dismissLoading but it will affect every view added from init or setView methods.
+     * Views added making use of showLoading are also included.
+     * @param activity Current activity
+     */
+    fun dismissAllLoading(activity: AppCompatActivity) {
+        if (!activity.isFinishing && !activity.isDestroyed) {
+            toggleAllLoading(activity, true)
+        }
+    }
+
+    /**
+     * This method destroy all data stored on DynamicLoaderCore
+     */
+    fun destroy() {
+        activitiesMap.clear()
+        instance = null
+    }
+
+    // Private functions //
 
     @Throws(LoaderNotInitialized::class)
     private fun toggleLoading(
@@ -234,165 +484,6 @@ class DynamicLoaderCore {
                 relativeLayout?.bringToFront()
             }
         }
-    }
-
-    /**
-     * This method initialize the dynamic loader for passed activity
-     * It must be called in onCreate method. You can set here the views you want to set loading or
-     * do it later.
-     * @param activity The current created activity
-     * @param views Array of views you want to set loading during activity's lifecycle. It could be not setted here
-     */
-    @Throws(LoaderAlreadyInit::class)
-    fun init(activity: AppCompatActivity, views: Array<View>? = null) {
-        if (activitiesMap.containsKey(activity::class.java.name)) {
-            throw LoaderAlreadyInit(
-                if (activity is LoaderAppCompatActivity) {
-                    "This activity is extending LoaderAppCompatActivity. Calling init(...) is not needed"
-                } else {
-                    "This activity was already initialized. You have to call init(...) only once"
-                }
-            )
-        }
-        activitiesMap[activity::class.java.name] = HashMap()
-        lifecycleObserver = LoaderLifecycle(activitiesMap, activity::class.java.name)
-        activity.lifecycle.addObserver(lifecycleObserver)
-        setViews(activity, views)
-    }
-
-    /**
-     * Call this method if you want to overwrite current activity's views to show loading views over them.
-     * This method is useful if you have already initialized your activity and you want to set views after
-     * something happened, for instance, an asynchronous work
-     * @param activity Current activity
-     * @param views Array of views to show loading view over them
-     */
-    fun setViews(activity: AppCompatActivity, views: Array<View>? = null) {
-        views?.let { nonNullViews ->
-            val hashMap = HashMap<View, RelativeLayout>()
-            for (view: View in nonNullViews) {
-                if (!hashMap.containsKey(view)) {
-                    hashMap[view] = RelativeLayout(activity)
-                }
-            }
-            activitiesMap[activity::class.java.name] = hashMap
-        }
-    }
-
-    fun showLoading(
-        activity: AppCompatActivity,
-        view: View,
-        backgroundColor: Int? = null,
-        progressColor: Int? = null
-    ) {
-        if (!activity.isFinishing && !activity.isDestroyed) {
-            val selectedBackgroundColor =
-                backgroundColor ?: themeUtils.resolveBackgroundColor(activity)
-            val selectedProgressColor = progressColor ?: themeUtils.resolveAccentColor(activity)
-            toggleLoading(activity, view, false, selectedBackgroundColor, selectedProgressColor)
-        }
-    }
-
-    fun showLoading(
-        activity: AppCompatActivity,
-        view: View,
-        backgroundColor: Int? = null,
-        animationName: String
-    ) {
-        if (!activity.isFinishing && !activity.isDestroyed) {
-            val selectedBackgroundColor =
-                backgroundColor ?: themeUtils.resolveBackgroundColor(activity)
-            toggleLoading(activity, view, selectedBackgroundColor, animationName)
-        }
-    }
-
-    fun showAllLoading(
-        activity: AppCompatActivity,
-        backgroundColor: Int? = null,
-        progressColor: Int? = null
-    ) {
-        if (!activity.isFinishing && !activity.isDestroyed) {
-            val backgroundColorInt = try {
-                ContextCompat.getColor(activity, backgroundColor!!)
-            } catch (e: Exception) {
-                backgroundColor
-            }
-            val progressColorInt = try {
-                ContextCompat.getColor(activity, progressColor!!)
-            } catch (e: Exception) {
-                progressColor
-            }
-            val selectedBackgroundColor =
-                backgroundColorInt ?: themeUtils.resolveBackgroundColor(activity)
-            val selectedProgressColor = progressColorInt ?: themeUtils.resolveAccentColor(activity)
-            toggleAllLoading(activity, false, selectedBackgroundColor, selectedProgressColor)
-        }
-    }
-
-    fun showAllLoading(
-        activity: AppCompatActivity,
-        backgroundColor: Int? = null,
-        animationName: String
-    ) {
-        if (!activity.isFinishing && !activity.isDestroyed) {
-            val backgroundColorInt = try {
-                ContextCompat.getColor(activity, backgroundColor!!)
-            } catch (e: Exception) {
-                backgroundColor
-            }
-            val selectedBackgroundColor =
-                backgroundColorInt ?: themeUtils.resolveBackgroundColor(activity)
-            toggleAllLoading(activity, selectedBackgroundColor, animationName)
-        }
-    }
-
-    fun dismissLoading(activity: AppCompatActivity, view: View) {
-        if (!activity.isFinishing && !activity.isDestroyed) {
-            toggleLoading(activity, view, true)
-        }
-    }
-
-    fun dismissAllLoading(activity: AppCompatActivity) {
-        if (!activity.isFinishing && !activity.isDestroyed) {
-            toggleAllLoading(activity, true)
-        }
-    }
-
-    fun showLoadingFromResources(
-        activity: AppCompatActivity,
-        view: View,
-        backgroundColor: Int,
-        progressColor: Int
-    ) {
-        val backgroundColorInt = ContextCompat.getColor(activity, backgroundColor)
-        val progressColorInt = ContextCompat.getColor(activity, progressColor)
-        showLoading(activity, view, backgroundColorInt, progressColorInt)
-    }
-
-    fun showLoadingFromResources(
-        activity: AppCompatActivity,
-        view: View, @ColorRes backgroundColor: Int,
-        animationName: String
-    ) {
-        val backgroundColorInt = ContextCompat.getColor(activity, backgroundColor)
-        showLoading(activity, view, backgroundColorInt, animationName)
-    }
-
-    fun showAllLoadingFromResources(
-        activity: AppCompatActivity,
-        @ColorRes backgroundColor: Int,
-        @ColorRes progressColor: Int
-    ) {
-        showAllLoading(
-            activity,
-            ContextCompat.getColor(activity, backgroundColor),
-            ContextCompat.getColor(activity, progressColor)
-        )
-    }
-
-    fun destroy() {
-        activitiesMap.clear()
-        instance = null
     }
 
     internal class LoaderLifecycle(

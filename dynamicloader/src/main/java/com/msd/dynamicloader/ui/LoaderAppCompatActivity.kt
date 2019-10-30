@@ -15,10 +15,22 @@ open class LoaderAppCompatActivity : AppCompatActivity() {
         DynamicLoaderCore.getInstance().init(this)
     }
 
+    /**
+     * Call this method to set the desired views to make them load after
+     * @param views Group of views which you want to be available for loading operations
+     */
     fun setViews(views: Array<View>) {
         DynamicLoaderCore.getInstance().setViews(this, views)
     }
 
+    /**
+     * This method creates and add a loading view over selected item. Background and progress color
+     * are both optional. By default colorPrimaryDark and colorAccent are taken to draw the view. You
+     * can specify one, both of none of them
+     * @param view Desired view to show loading over it
+     * @param backgroundColor If not specified, colorPrimaryDark
+     * @param progressColor If not specified, colorAccent
+     */
     fun showLoading(
         view: View,
         @ColorInt backgroundColor: Int? = null,
@@ -28,6 +40,27 @@ open class LoaderAppCompatActivity : AppCompatActivity() {
             .showLoading(this, view, backgroundColor, progressColor)
     }
 
+    /**
+     * This method creates and add a loading view over selected item. Background color
+     * is optional. By default colorPrimaryDark ais taken to draw the view. You
+     * must specify the animation file which you want to use and must be present on assets folder
+     * @param view Desired view to show loading over it
+     * @param backgroundColor If not specified, colorPrimaryDark
+     * @param animationName Animation json file name
+     */
+    fun showLoading(view: View, backgroundColor: Int? = null, animationName: String) {
+        DynamicLoaderCore.getInstance()
+            .showLoading(this, view, backgroundColor, animationName)
+    }
+
+    /**
+     * This method adds loading view for specified item. Background and progress color
+     * are mandatory and must exist on colors.xml file. You
+     * must specify both of them
+     * @param view Desired view to show loading over it
+     * @param backgroundColor It must be specified and must exist on colors.xml
+     * @param progressColor It must be specified and must exist on colors.xml
+     */
     fun showLoadingFromResources(
         view: View,
         backgroundColor: Int,
@@ -39,41 +72,27 @@ open class LoaderAppCompatActivity : AppCompatActivity() {
             .showLoading(this, view, backgroundColorInt, progressColorInt)
     }
 
-    fun showLoading(view: View, backgroundColor: Int? = null, animationName: String) {
-        DynamicLoaderCore.getInstance()
-            .showLoading(this, view, backgroundColor, animationName)
-    }
-
+    /**
+     * This method creates and add a loading view over selected item. You
+     * must specify the animation file which you want to use and must be present on assets folder.
+     * Background color must be present and must be on colors.xml
+     * @param backgroundColor It must be specified and must exist on colors.xml
+     * @param animationName Animation json file name
+     */
     fun showLoadingFromResources(view: View, @ColorRes backgroundColor: Int, animationName: String) {
         val backgroundColorInt = ContextCompat.getColor(this, backgroundColor)
         DynamicLoaderCore.getInstance()
             .showLoading(this, view, backgroundColorInt, animationName)
     }
 
-    fun showAllLoadingFromResources(
-        @ColorRes backgroundColor: Int,
-        @ColorRes progressColor: Int
-    ) {
-        DynamicLoaderCore.getInstance()
-            .showAllLoading(
-                this,
-                ContextCompat.getColor(this, backgroundColor),
-                ContextCompat.getColor(this, progressColor)
-            )
-    }
-
-    fun showAllLoadingFromResources(
-        @ColorRes backgroundColor: Int,
-       animationName: String
-    ) {
-        DynamicLoaderCore.getInstance()
-            .showAllLoading(
-                this,
-                ContextCompat.getColor(this, backgroundColor),
-                animationName
-            )
-    }
-
+    /**
+     * This method adds loading views for each component set on init or setViews methods. Also
+     * independent elements added with showLoading are affected by this method. Background and progress color
+     * are both optional. By default colorPrimaryDark and colorAccent are taken to draw the view. You
+     * can specify one, both of none of them
+     * @param backgroundColor If not specified, colorPrimaryDark
+     * @param progressColor If not specified, colorAccent
+     */
     fun showAllLoading(
         backgroundColor: Int? = null,
         progressColor: Int? = null
@@ -92,6 +111,13 @@ open class LoaderAppCompatActivity : AppCompatActivity() {
             .showAllLoading(this, backgroundColorInt, progressColorInt)
     }
 
+    /**
+     * This method adds loading views for each component set on init or setViews methods. Also
+     * independent elements added with showLoading are affected by this method. You
+     * must specify the animation file which you want to use and must be present on assets folder
+     * @param backgroundColor If not specified, colorPrimaryDark
+     * @param animationName Animation json file name
+     */
     fun showAllLoading(
         backgroundColor: Int? = null,
         animationName: String
@@ -105,10 +131,59 @@ open class LoaderAppCompatActivity : AppCompatActivity() {
             .showAllLoading(this, backgroundColorInt, animationName)
     }
 
+    /**
+     * This method adds loading views for each component set on init or setViews methods. Also
+     * independent elements added with showLoading are affected by this method. Background and progress color
+     * are mandatory and must exist on colors.xml file. You
+     * must specify both of them
+     * @param backgroundColor It must be specified and must exist on colors.xml
+     * @param progressColor It must be specified and must exist on colors.xml
+     */
+    fun showAllLoadingFromResources(
+        @ColorRes backgroundColor: Int,
+        @ColorRes progressColor: Int
+    ) {
+        DynamicLoaderCore.getInstance()
+            .showAllLoading(
+                this,
+                ContextCompat.getColor(this, backgroundColor),
+                ContextCompat.getColor(this, progressColor)
+            )
+    }
+
+    /**
+     * This method adds loading views for each component set on init or setViews methods. Also
+     * independent elements added with showLoading are affected by this method. You
+     * must specify the animation file which you want to use and must be present on assets folder. Background color
+     * is mandatory and must exist on colors.xml file. You
+     * must specify it
+     * @param backgroundColor If not specified, colorPrimaryDark
+     * @param animationName Animation json file name
+     */
+    fun showAllLoadingFromResources(
+        @ColorRes backgroundColor: Int,
+       animationName: String
+    ) {
+        DynamicLoaderCore.getInstance()
+            .showAllLoading(
+                this,
+                ContextCompat.getColor(this, backgroundColor),
+                animationName
+            )
+    }
+
+    /**
+     * This method remove loading view over specified item if exists.
+     * @param view Desired view to remove it's loading view
+     */
     fun dismissLoading(view: View) {
         DynamicLoaderCore.getInstance().dismissLoading(this, view)
     }
 
+    /**
+     * This method is like dismissLoading but it will affect every view added from init or setView methods.
+     * Views added making use of showLoading are also included.
+     */
     fun dismissAllLoading() {
         DynamicLoaderCore.getInstance().dismissAllLoading(this)
     }
