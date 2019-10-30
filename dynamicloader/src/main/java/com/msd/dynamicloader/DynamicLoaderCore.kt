@@ -63,7 +63,7 @@ class DynamicLoaderCore {
 
     @Throws(LoaderNotInitialized::class)
     private fun toggleLoading(
-        activity: AppCompatActivity, view: View, disableLoading: Boolean,
+        activity: AppCompatActivity, view: View,
         backgroundColor: Int? = null,
         animationName: String
     ) {
@@ -78,7 +78,6 @@ class DynamicLoaderCore {
             processView(
                 view,
                 loadingMap[view],
-                disableLoading,
                 backgroundColor,
                 animationName
             )
@@ -127,7 +126,6 @@ class DynamicLoaderCore {
                 processView(
                     view,
                     relativeLayout,
-                    false,
                     backgroundColor,
                     animationName
                 )
@@ -192,20 +190,16 @@ class DynamicLoaderCore {
     private fun processView(
         view: View,
         relativeLayout: RelativeLayout?,
-        disableLoading: Boolean,
         backgroundColor: Int?,
         animationName: String
     ) {
         var loading = false
         for (v: View in (view.parent as ViewGroup).children) {
             if (v == relativeLayout) {
-                if (disableLoading) {
-                    (view.parent as ViewGroup).removeView(v)
-                }
                 loading = true
             }
         }
-        if (!loading && !disableLoading && backgroundColor != null && animationName.isNotEmpty()) {
+        if (!loading && backgroundColor != null && animationName.isNotEmpty()) {
             view.post {
                 val drawable: Drawable? = view.background?.constantState?.newDrawable()
                 relativeLayout?.removeAllViews()
@@ -242,6 +236,13 @@ class DynamicLoaderCore {
         }
     }
 
+    /**
+     * This method initialize the dynamic loader for passed activity
+     * It must be called in onCreate method. You can set here the views you want to set loading or
+     * do it later.
+     * @param activity The current created activity
+     * @param views Array of views you want to set loading during activity's lifecycle. It could be not setted here
+     */
     @Throws(LoaderAlreadyInit::class)
     fun init(activity: AppCompatActivity, views: Array<View>? = null) {
         if (activitiesMap.containsKey(activity::class.java.name)) {
@@ -259,6 +260,13 @@ class DynamicLoaderCore {
         setViews(activity, views)
     }
 
+    /**
+     * Call this method if you want to overwrite current activity's views to show loading views over them.
+     * This method is useful if you have already initialized your activity and you want to set views after
+     * something happened, for instance, an asynchronous work
+     * @param activity Current activity
+     * @param views Array of views to show loading view over them
+     */
     fun setViews(activity: AppCompatActivity, views: Array<View>? = null) {
         views?.let { nonNullViews ->
             val hashMap = HashMap<View, RelativeLayout>()
@@ -294,7 +302,7 @@ class DynamicLoaderCore {
         if (!activity.isFinishing && !activity.isDestroyed) {
             val selectedBackgroundColor =
                 backgroundColor ?: themeUtils.resolveBackgroundColor(activity)
-            toggleLoading(activity, view, false, selectedBackgroundColor, animationName)
+            toggleLoading(activity, view, selectedBackgroundColor, animationName)
         }
     }
 
