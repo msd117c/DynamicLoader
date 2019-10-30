@@ -17,6 +17,7 @@ import androidx.lifecycle.OnLifecycleEvent
 import com.airbnb.lottie.LottieAnimationView
 import com.airbnb.lottie.LottieDrawable
 import com.msd.dynamicloader.exceptions.LoaderAlreadyInit
+import com.msd.dynamicloader.exceptions.LoaderNotInitialized
 import com.msd.dynamicloader.ui.LoaderAppCompatActivity
 import com.msd.dynamicloader.utils.ThemeUtils
 
@@ -36,13 +37,14 @@ class DynamicLoaderCore {
     lateinit var lifecycleObserver: LifecycleObserver
     private val themeUtils = ThemeUtils()
 
+    @Throws(LoaderNotInitialized::class)
     private fun toggleLoading(
         activity: AppCompatActivity, view: View, disableLoading: Boolean,
         backgroundColor: Int? = null,
         progressColor: Int? = null
     ) {
         if (!activitiesMap.containsKey(activity::class.java.name)) {
-            activitiesMap[activity::class.java.name] = HashMap()
+            throw LoaderNotInitialized()
         }
         val loadingMap = activitiesMap[activity::class.java.name]
         if (loadingMap != null) {
@@ -59,13 +61,14 @@ class DynamicLoaderCore {
         }
     }
 
+    @Throws(LoaderNotInitialized::class)
     private fun toggleLoading(
         activity: AppCompatActivity, view: View, disableLoading: Boolean,
         backgroundColor: Int? = null,
         animationName: String
     ) {
         if (!activitiesMap.containsKey(activity::class.java.name)) {
-            activitiesMap[activity::class.java.name] = HashMap()
+            throw LoaderNotInitialized()
         }
         val loadingMap = activitiesMap[activity::class.java.name]
         if (loadingMap != null) {
@@ -82,13 +85,14 @@ class DynamicLoaderCore {
         }
     }
 
+    @Throws(LoaderNotInitialized::class)
     private fun toggleAllLoading(
         activity: AppCompatActivity, disableLoading: Boolean,
         backgroundColor: Int? = null,
         progressColor: Int? = null
     ) {
         if (!activitiesMap.containsKey(activity::class.java.name)) {
-            activitiesMap[activity::class.java.name] = HashMap()
+            throw LoaderNotInitialized()
         }
         val loadingMap = activitiesMap[activity::class.java.name]
         if (loadingMap != null) {
@@ -106,13 +110,14 @@ class DynamicLoaderCore {
         }
     }
 
+    @Throws(LoaderNotInitialized::class)
     private fun toggleAllLoading(
-        activity: AppCompatActivity, disableLoading: Boolean,
+        activity: AppCompatActivity,
         backgroundColor: Int? = null,
         animationName: String
     ) {
         if (!activitiesMap.containsKey(activity::class.java.name)) {
-            activitiesMap[activity::class.java.name] = HashMap()
+            throw LoaderNotInitialized()
         }
         val loadingMap = activitiesMap[activity::class.java.name]
         if (loadingMap != null) {
@@ -122,7 +127,7 @@ class DynamicLoaderCore {
                 processView(
                     view,
                     relativeLayout,
-                    disableLoading,
+                    false,
                     backgroundColor,
                     animationName
                 )
@@ -329,7 +334,7 @@ class DynamicLoaderCore {
             }
             val selectedBackgroundColor =
                 backgroundColorInt ?: themeUtils.resolveBackgroundColor(activity)
-            toggleAllLoading(activity, false, selectedBackgroundColor, animationName)
+            toggleAllLoading(activity, selectedBackgroundColor, animationName)
         }
     }
 
