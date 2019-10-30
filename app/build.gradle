@@ -11,8 +11,23 @@ android {
         applicationId "com.msd.dynamicloaders"
         minSdkVersion 17
         targetSdkVersion 28
-        versionCode 1
-        versionName "1.0"
+
+        def majorVersion = project.major_version.toString()
+        def minorVersion = ""
+        if (project.minor_version > 9) {
+            minorVersion = project.minor_version.toString()
+        } else {
+            minorVersion = "0" + project.minor_version.toString()
+        }
+        def patchVersion = ""
+        if (project.patch_version > 9) {
+            patchVersion = project.patch_version.toString()
+        } else {
+            patchVersion = "0" + project.patch_version.toString()
+        }
+
+        versionCode = (majorVersion + minorVersion + patchVersion).toInteger()
+        versionName majorVersion + minorVersion + patchVersion
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
     }
     buildTypes {
