@@ -1,16 +1,34 @@
 apply plugin: 'com.android.library'
 apply plugin: 'kotlin-android'
 apply plugin: 'kotlin-android-extensions'
+
+def major_version = 1
+def minor_version = 0
+def patch_version = 0
+
 android {
     compileSdkVersion 28
     buildToolsVersion "29.0.1"
-
-
     defaultConfig {
-        minSdkVersion 17
+        minSdkVersion 16
         targetSdkVersion 28
-        versionCode 1
-        versionName "1.0"
+
+        def majorVersion = major_version.toString()
+        def minorVersion = ""
+        if (minor_version > 9) {
+            minorVersion = minor_version.toString()
+        } else {
+            minorVersion = "0" + minor_version.toString()
+        }
+        def patchVersion = ""
+        if (patch_version > 9) {
+            patchVersion = patch_version.toString()
+        } else {
+            patchVersion = "0" + patch_version.toString()
+        }
+
+        versionCode = (majorVersion + minorVersion + patchVersion).toInteger()
+        versionName majorVersion + minorVersion + patchVersion
 
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         consumerProguardFiles 'consumer-rules.pro'
