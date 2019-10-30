@@ -13,15 +13,17 @@ import androidx.core.view.children
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleObserver
 import androidx.lifecycle.OnLifecycleEvent
+import com.msd.dynamicloader.exceptions.LoaderAlreadyInit
+import com.msd.dynamicloader.ui.LoaderAppCompatActivity
 import com.msd.dynamicloader.utils.ThemeUtils
 
-class Loader {
+class DynamicLoaderCore {
 
     companion object {
-        private var instance: Loader? = null
-        fun getInstance(): Loader {
+        private var instance: DynamicLoaderCore? = null
+        fun getInstance(): DynamicLoaderCore {
             if (instance == null) {
-                instance = Loader()
+                instance = DynamicLoaderCore()
             }
             return instance!!
         }
@@ -33,14 +35,14 @@ class Loader {
 
     private fun toggleLoading(
         activity: AppCompatActivity, view: View, disableLoading: Boolean,
-        backgroundColor: Int = -1,
-        progressColor: Int = -1
+        backgroundColor: Int? = null,
+        progressColor: Int? = null
     ) {
         if (!activitiesMap.containsKey(activity::class.java.name)) {
             activitiesMap[activity::class.java.name] = HashMap()
         }
         val loadingMap = activitiesMap[activity::class.java.name]
-        if (loadingMap != null) {
+        if (loadingMap != null && backgroundColor != null && progressColor != null) {
             if (!loadingMap.containsKey(view) || loadingMap[view] == null) {
                 loadingMap[view] = RelativeLayout(view.context)
             }
@@ -56,14 +58,14 @@ class Loader {
 
     private fun toggleAllLoading(
         activity: AppCompatActivity, disableLoading: Boolean,
-        backgroundColor: Int = -1,
-        progressColor: Int = -1
+        backgroundColor: Int? = null,
+        progressColor: Int? = null
     ) {
         if (!activitiesMap.containsKey(activity::class.java.name)) {
             activitiesMap[activity::class.java.name] = HashMap()
         }
         val loadingMap = activitiesMap[activity::class.java.name]
-        if (loadingMap != null) {
+        if (loadingMap != null && backgroundColor != null && progressColor != null) {
             for (entry: Map.Entry<View, RelativeLayout> in loadingMap) {
                 val view = entry.key
                 val relativeLayout = entry.value
@@ -82,8 +84,8 @@ class Loader {
         view: View,
         relativeLayout: RelativeLayout?,
         disableLoading: Boolean,
-        backgroundColor: Int = -1,
-        progressColor: Int = -1
+        backgroundColor: Int,
+        progressColor: Int
     ) {
         var loading = false
         for (v: View in (view.parent as ViewGroup).children) {
@@ -102,15 +104,11 @@ class Loader {
                 relativeLayout?.layoutParams?.height = view.height
                 if (drawable == null) {
                     relativeLayout?.setBackgroundColor(
-                        if (backgroundColor != -1) {
-                            backgroundColor
-                        } else {
-                            Color.BLACK
-                        }
+                        backgroundColor
                     )
                 } else {
                     relativeLayout?.background = drawable
-                    if (backgroundColor != -1 && relativeLayout?.background != null) {
+                    if (relativeLayout?.background != null) {
                         DrawableCompat.setTint(
                             relativeLayout.background,
                             backgroundColor
@@ -135,7 +133,17 @@ class Loader {
         }
     }
 
+    @Throws(LoaderAlreadyInit::class)
     fun init(activity: AppCompatActivity, views: Array<View>? = null) {
+        if (activitiesMap.containsKey(activity::class.java.name)) {
+            throw LoaderAlreadyInit(if (activity is LoaderAppCompatActivity) {
+                "This activity is extending LoaderAppCompatActivity. Calling init(...) is not needed"
+            } else {
+                "This activity was already initialized. You have to call init(...) only once"
+            }
+            )
+        }
+        activitiesMap[activity::class.java.name] = HashMap()
         lifecycleObserver = LoaderLifecycle(activitiesMap, activity::class.java.name)
         activity.lifecycle.addObserver(lifecycleObserver)
         setViews(activity, views)

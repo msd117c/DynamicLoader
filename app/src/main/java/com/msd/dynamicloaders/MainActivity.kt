@@ -3,6 +3,7 @@ package com.msd.dynamicloaders
 import android.graphics.Color
 import android.os.Bundle
 import android.widget.Button
+import com.msd.dynamicloader.DynamicLoaderCore
 import com.msd.dynamicloader.ui.LoaderAppCompatActivity
 
 class MainActivity : LoaderAppCompatActivity() {

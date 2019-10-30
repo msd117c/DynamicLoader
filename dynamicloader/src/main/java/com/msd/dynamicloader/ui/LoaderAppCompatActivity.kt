@@ -6,17 +6,17 @@ import androidx.annotation.ColorInt
 import androidx.annotation.ColorRes
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
-import com.msd.dynamicloader.Loader
+import com.msd.dynamicloader.DynamicLoaderCore
 
 open class LoaderAppCompatActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        Loader.getInstance().init(this)
+        DynamicLoaderCore.getInstance().init(this)
     }
 
     fun setViews(views: Array<View>) {
-        Loader.getInstance().setViews(this, views)
+        DynamicLoaderCore.getInstance().setViews(this, views)
     }
 
     fun showLoading(
@@ -24,7 +24,7 @@ open class LoaderAppCompatActivity : AppCompatActivity() {
         @ColorInt backgroundColor: Int? = null,
         @ColorInt progressColor: Int? = null
     ) {
-        Loader.getInstance()
+        DynamicLoaderCore.getInstance()
             .showLoading(this, view, backgroundColor, progressColor)
     }
 
@@ -35,7 +35,7 @@ open class LoaderAppCompatActivity : AppCompatActivity() {
     ) {
         val backgroundColorInt = ContextCompat.getColor(this, backgroundColor)
         val progressColorInt = ContextCompat.getColor(this, progressColor)
-        Loader.getInstance()
+        DynamicLoaderCore.getInstance()
             .showLoading(this, view, backgroundColorInt, progressColorInt)
     }
 
@@ -43,7 +43,7 @@ open class LoaderAppCompatActivity : AppCompatActivity() {
         @ColorRes backgroundColor: Int,
         @ColorRes progressColor: Int
     ) {
-        Loader.getInstance()
+        DynamicLoaderCore.getInstance()
             .showAllLoading(
                 this,
                 ContextCompat.getColor(this, backgroundColor),
@@ -65,16 +65,16 @@ open class LoaderAppCompatActivity : AppCompatActivity() {
         } catch (e: Exception) {
             progressColor
         }
-        Loader.getInstance()
+        DynamicLoaderCore.getInstance()
             .showAllLoading(this, backgroundColorInt, progressColorInt)
     }
 
     fun dismissLoading(view: View) {
-        Loader.getInstance().dismissLoading(this, view)
+        DynamicLoaderCore.getInstance().dismissLoading(this, view)
     }
 
     fun dismissAllLoading() {
-        Loader.getInstance().dismissAllLoading(this)
+        DynamicLoaderCore.getInstance().dismissAllLoading(this)
     }
 
 }
