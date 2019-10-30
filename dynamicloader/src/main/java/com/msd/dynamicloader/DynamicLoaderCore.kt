@@ -18,7 +18,6 @@ import com.airbnb.lottie.LottieAnimationView
 import com.airbnb.lottie.LottieDrawable
 import com.msd.dynamicloader.exceptions.LoaderAlreadyInit
 import com.msd.dynamicloader.exceptions.LoaderNotInitialized
-import com.msd.dynamicloader.ui.LoaderAppCompatActivity
 import com.msd.dynamicloader.utils.ThemeUtils
 
 class DynamicLoaderCore {
@@ -42,6 +41,8 @@ class DynamicLoaderCore {
      */
     private var activitiesMap = HashMap<String, HashMap<View, RelativeLayout>>()
 
+    private var loadingShowing = HashMap<Pair<String, Int>, RelativeLayout>()
+
     /**
      * This attribute will be used to handle lifecycle changes
      */
@@ -61,7 +62,7 @@ class DynamicLoaderCore {
      */
     @Throws(LoaderAlreadyInit::class)
     fun init(activity: AppCompatActivity, views: Array<View>? = null) {
-        if (activitiesMap.containsKey(activity::class.java.name)) {
+        /*if (activitiesMap.containsKey(activity::class.java.name)) {
             throw LoaderAlreadyInit(
                 if (activity is LoaderAppCompatActivity) {
                     "This activity is extending LoaderAppCompatActivity. Calling init(...) is not needed"
@@ -69,9 +70,12 @@ class DynamicLoaderCore {
                     "This activity was already initialized. You have to call init(...) only once"
                 }
             )
+        }*/
+        if (!activitiesMap.containsKey(activity::class.java.name)) {
+            activitiesMap[activity::class.java.name] = HashMap()
         }
         activitiesMap[activity::class.java.name] = HashMap()
-        lifecycleObserver = LoaderLifecycle(activitiesMap, activity::class.java.name)
+        lifecycleObserver = LoaderLifecycle(activitiesMap, activity)
         activity.lifecycle.addObserver(lifecycleObserver)
         setViews(activity, views)
     }
@@ -85,10 +89,15 @@ class DynamicLoaderCore {
      */
     fun setViews(activity: AppCompatActivity, views: Array<View>? = null) {
         views?.let { nonNullViews ->
-            val hashMap = HashMap<View, RelativeLayout>()
+            val hashMap = activitiesMap[activity::class.java.name] ?: HashMap()
+            var relativeLayout: RelativeLayout? = null
             for (view: View in nonNullViews) {
+                if (loadingShowing.containsKey(Pair(activity::class.java.name, view.id))) {
+                    relativeLayout = loadingShowing[Pair(activity::class.java.name, view.id)]
+                    (view.parent as ViewGroup).addView(relativeLayout)
+                }
                 if (!hashMap.containsKey(view)) {
-                    hashMap[view] = RelativeLayout(activity)
+                    hashMap[view] = relativeLayout ?: RelativeLayout(activity)
                 }
             }
             activitiesMap[activity::class.java.name] = hashMap
@@ -282,6 +291,7 @@ class DynamicLoaderCore {
      */
     fun destroy() {
         activitiesMap.clear()
+        loadingShowing.clear()
         instance = null
     }
 
@@ -302,6 +312,7 @@ class DynamicLoaderCore {
                 loadingMap[view] = RelativeLayout(view.context)
             }
             processView(
+                activity::class.java.name,
                 view,
                 loadingMap[view],
                 disableLoading,
@@ -326,6 +337,7 @@ class DynamicLoaderCore {
                 loadingMap[view] = RelativeLayout(view.context)
             }
             processView(
+                activity::class.java.name,
                 view,
                 loadingMap[view],
                 backgroundColor,
@@ -349,6 +361,7 @@ class DynamicLoaderCore {
                 val view = entry.key
                 val relativeLayout = entry.value
                 processView(
+                    activity::class.java.name,
                     view,
                     relativeLayout,
                     disableLoading,
@@ -374,6 +387,7 @@ class DynamicLoaderCore {
                 val view = entry.key
                 val relativeLayout = entry.value
                 processView(
+                    activity::class.java.name,
                     view,
                     relativeLayout,
                     backgroundColor,
@@ -384,6 +398,7 @@ class DynamicLoaderCore {
     }
 
     private fun processView(
+        activityName: String,
         view: View,
         relativeLayout: RelativeLayout?,
         disableLoading: Boolean,
@@ -395,6 +410,7 @@ class DynamicLoaderCore {
             if (v == relativeLayout) {
                 if (disableLoading) {
                     (view.parent as ViewGroup).removeView(v)
+                    loadingShowing.remove(Pair(activityName, view.id))
                 }
                 loading = true
             }
@@ -433,11 +449,15 @@ class DynamicLoaderCore {
                 relativeLayout?.addView(progressBar)
                 (view.parent as ViewGroup).addView(relativeLayout)
                 relativeLayout?.bringToFront()
+                relativeLayout?.let { nonNullLayout ->
+                    loadingShowing[Pair(activityName, view.id)] = nonNullLayout
+                }
             }
         }
     }
 
     private fun processView(
+        activityName: String,
         view: View,
         relativeLayout: RelativeLayout?,
         backgroundColor: Int?,
@@ -482,21 +502,35 @@ class DynamicLoaderCore {
                 relativeLayout?.addView(animation)
                 (view.parent as ViewGroup).addView(relativeLayout)
                 relativeLayout?.bringToFront()
+                relativeLayout?.let { nonNullLayout ->
+                    loadingShowing[Pair(activityName, view.id)] = nonNullLayout
+                }
             }
         }
     }
 
     internal class LoaderLifecycle(
         private var activitiesMap: HashMap<String, HashMap<View, RelativeLayout>>,
-        private var activityName: String
+        private var activity: AppCompatActivity
     ) : LifecycleObserver {
 
 
         @OnLifecycleEvent(Lifecycle.Event.ON_DESTROY)
         fun onDestroy() {
+            val activityName = activity::class.java.name
             if (activitiesMap.containsKey(activityName)) {
-                activitiesMap[activityName]?.clear()
-                activitiesMap.remove(activityName)
+                activitiesMap[activityName]?.let { nonNullMap ->
+                    for (entry: Map.Entry<View, RelativeLayout> in nonNullMap) {
+                        if ((entry.key.parent as ViewGroup).children.contains(entry.value)) {
+                            (entry.key.parent as ViewGroup).removeView(entry.value)
+                        }
+                    }
+                }
+                if (activity.isFinishing) {
+                    activitiesMap[activityName]?.clear()
+                    activitiesMap.remove(activityName)
+
+                }
             }
         }
 
