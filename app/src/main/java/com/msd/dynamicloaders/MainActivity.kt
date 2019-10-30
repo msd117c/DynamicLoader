@@ -1,29 +1,38 @@
 package com.msd.dynamicloaders
 
-import android.graphics.Color
+import android.content.Intent
 import android.os.Bundle
 import android.widget.Button
+import androidx.appcompat.app.AppCompatActivity
 import com.msd.dynamicloader.DynamicLoaderCore
-import com.msd.dynamicloader.ui.LoaderAppCompatActivity
 
-class MainActivity : LoaderAppCompatActivity() {
+class MainActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
-        setViews(
-            arrayOf(
+        DynamicLoaderCore.getInstance().init(
+            this, arrayOf(
                 findViewById(R.id.text),
-                findViewById(R.id.textView)
+                findViewById(R.id.textView),
+                findViewById(R.id.textView2)
             )
         )
 
         findViewById<Button>(R.id.button).setOnClickListener {
-            showAllLoading(Color.RED, Color.parseColor("#BCFF00"))
+            DynamicLoaderCore.getInstance().showAllLoading(this)
+        }
+
+        findViewById<Button>(R.id.button_anim).setOnClickListener {
+            DynamicLoaderCore.getInstance().showAllLoading(this, animationName = "loading.json")
         }
 
         findViewById<Button>(R.id.button_stop).setOnClickListener {
-            dismissAllLoading()
+            DynamicLoaderCore.getInstance().dismissAllLoading(this)
+        }
+
+        findViewById<Button>(R.id.second).setOnClickListener {
+            startActivity(Intent(this, SecondActivity::class.java))
         }
     }
 

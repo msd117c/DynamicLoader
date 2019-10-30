@@ -39,6 +39,17 @@ open class LoaderAppCompatActivity : AppCompatActivity() {
             .showLoading(this, view, backgroundColorInt, progressColorInt)
     }
 
+    fun showLoading(view: View, backgroundColor: Int? = null, animationName: String) {
+        DynamicLoaderCore.getInstance()
+            .showLoading(this, view, backgroundColor, animationName)
+    }
+
+    fun showLoadingFromResources(view: View, @ColorRes backgroundColor: Int, animationName: String) {
+        val backgroundColorInt = ContextCompat.getColor(this, backgroundColor)
+        DynamicLoaderCore.getInstance()
+            .showLoading(this, view, backgroundColorInt, animationName)
+    }
+
     fun showAllLoadingFromResources(
         @ColorRes backgroundColor: Int,
         @ColorRes progressColor: Int
@@ -48,6 +59,18 @@ open class LoaderAppCompatActivity : AppCompatActivity() {
                 this,
                 ContextCompat.getColor(this, backgroundColor),
                 ContextCompat.getColor(this, progressColor)
+            )
+    }
+
+    fun showAllLoadingFromResources(
+        @ColorRes backgroundColor: Int,
+       animationName: String
+    ) {
+        DynamicLoaderCore.getInstance()
+            .showAllLoading(
+                this,
+                ContextCompat.getColor(this, backgroundColor),
+                animationName
             )
     }
 
@@ -67,6 +90,19 @@ open class LoaderAppCompatActivity : AppCompatActivity() {
         }
         DynamicLoaderCore.getInstance()
             .showAllLoading(this, backgroundColorInt, progressColorInt)
+    }
+
+    fun showAllLoading(
+        backgroundColor: Int? = null,
+        animationName: String
+    ) {
+        val backgroundColorInt = try {
+            ContextCompat.getColor(this, backgroundColor!!)
+        } catch (e: Exception) {
+            backgroundColor
+        }
+        DynamicLoaderCore.getInstance()
+            .showAllLoading(this, backgroundColorInt, animationName)
     }
 
     fun dismissLoading(view: View) {
