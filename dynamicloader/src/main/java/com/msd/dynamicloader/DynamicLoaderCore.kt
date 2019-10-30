@@ -16,11 +16,10 @@ import androidx.lifecycle.LifecycleObserver
 import androidx.lifecycle.OnLifecycleEvent
 import com.airbnb.lottie.LottieAnimationView
 import com.airbnb.lottie.LottieDrawable
-import com.msd.dynamicloader.exceptions.LoaderAlreadyInit
 import com.msd.dynamicloader.exceptions.LoaderNotInitialized
 import com.msd.dynamicloader.utils.ThemeUtils
 
-class DynamicLoaderCore {
+class DynamicLoaderCore : DynamicLoaderCoreInterface {
 
     companion object {
         private var instance: DynamicLoaderCore? = null
@@ -60,17 +59,7 @@ class DynamicLoaderCore {
      * @param activity The current created activity
      * @param views Array of views you want to set loading during activity's lifecycle. It could be not setted here
      */
-    @Throws(LoaderAlreadyInit::class)
-    fun init(activity: AppCompatActivity, views: Array<View>? = null) {
-        /*if (activitiesMap.containsKey(activity::class.java.name)) {
-            throw LoaderAlreadyInit(
-                if (activity is LoaderAppCompatActivity) {
-                    "This activity is extending LoaderAppCompatActivity. Calling init(...) is not needed"
-                } else {
-                    "This activity was already initialized. You have to call init(...) only once"
-                }
-            )
-        }*/
+    override fun init(activity: AppCompatActivity, views: Array<View>?) {
         if (!activitiesMap.containsKey(activity::class.java.name)) {
             activitiesMap[activity::class.java.name] = HashMap()
         }
@@ -87,7 +76,7 @@ class DynamicLoaderCore {
      * @param activity Current activity
      * @param views Array of views to show loading view over them
      */
-    fun setViews(activity: AppCompatActivity, views: Array<View>? = null) {
+    override fun setViews(activity: AppCompatActivity, views: Array<View>?) {
         views?.let { nonNullViews ->
             val hashMap = activitiesMap[activity::class.java.name] ?: HashMap()
             var relativeLayout: RelativeLayout? = null
@@ -113,11 +102,11 @@ class DynamicLoaderCore {
      * @param backgroundColor If not specified, colorPrimaryDark
      * @param progressColor If not specified, colorAccent
      */
-    fun showLoading(
+    override fun showLoading(
         activity: AppCompatActivity,
         view: View,
-        backgroundColor: Int? = null,
-        progressColor: Int? = null
+        backgroundColor: Int?,
+        progressColor: Int?
     ) {
         if (!activity.isFinishing && !activity.isDestroyed) {
             val selectedBackgroundColor =
@@ -136,10 +125,10 @@ class DynamicLoaderCore {
      * @param backgroundColor If not specified, colorPrimaryDark
      * @param animationName Animation json file name
      */
-    fun showLoading(
+    override fun showLoading(
         activity: AppCompatActivity,
         view: View,
-        backgroundColor: Int? = null,
+        backgroundColor: Int?,
         animationName: String
     ) {
         if (!activity.isFinishing && !activity.isDestroyed) {
@@ -158,7 +147,7 @@ class DynamicLoaderCore {
      * @param backgroundColor It must be specified and must exist on colors.xml
      * @param progressColor It must be specified and must exist on colors.xml
      */
-    fun showLoadingFromResources(
+    override fun showLoadingFromResources(
         activity: AppCompatActivity,
         view: View,
         backgroundColor: Int,
@@ -177,7 +166,7 @@ class DynamicLoaderCore {
      * @param backgroundColor It must be specified and must exist on colors.xml
      * @param animationName Animation json file name
      */
-    fun showLoadingFromResources(
+    override fun showLoadingFromResources(
         activity: AppCompatActivity,
         view: View, @ColorRes backgroundColor: Int,
         animationName: String
@@ -195,10 +184,10 @@ class DynamicLoaderCore {
      * @param backgroundColor If not specified, colorPrimaryDark
      * @param progressColor If not specified, colorAccent
      */
-    fun showAllLoading(
+    override fun showAllLoading(
         activity: AppCompatActivity,
-        backgroundColor: Int? = null,
-        progressColor: Int? = null
+        backgroundColor: Int?,
+        progressColor: Int?
     ) {
         if (!activity.isFinishing && !activity.isDestroyed) {
             val backgroundColorInt = try {
@@ -226,9 +215,9 @@ class DynamicLoaderCore {
      * @param backgroundColor If not specified, colorPrimaryDark
      * @param animationName Animation json file name
      */
-    fun showAllLoading(
+    override fun showAllLoading(
         activity: AppCompatActivity,
-        backgroundColor: Int? = null,
+        backgroundColor: Int?,
         animationName: String
     ) {
         if (!activity.isFinishing && !activity.isDestroyed) {
@@ -252,7 +241,7 @@ class DynamicLoaderCore {
      * @param backgroundColor It must be specified and must exist on colors.xml
      * @param progressColor It must be specified and must exist on colors.xml
      */
-    fun showAllLoadingFromResources(
+    override fun showAllLoadingFromResources(
         activity: AppCompatActivity,
         @ColorRes backgroundColor: Int,
         @ColorRes progressColor: Int
@@ -269,7 +258,7 @@ class DynamicLoaderCore {
      * @param activity Current activity
      * @param view Desired view to remove it's loading view
      */
-    fun dismissLoading(activity: AppCompatActivity, view: View) {
+    override fun dismissLoading(activity: AppCompatActivity, view: View) {
         if (!activity.isFinishing && !activity.isDestroyed) {
             toggleLoading(activity, view, true)
         }
@@ -280,7 +269,7 @@ class DynamicLoaderCore {
      * Views added making use of showLoading are also included.
      * @param activity Current activity
      */
-    fun dismissAllLoading(activity: AppCompatActivity) {
+    override fun dismissAllLoading(activity: AppCompatActivity) {
         if (!activity.isFinishing && !activity.isDestroyed) {
             toggleAllLoading(activity, true)
         }
@@ -289,7 +278,7 @@ class DynamicLoaderCore {
     /**
      * This method destroy all data stored on DynamicLoaderCore
      */
-    fun destroy() {
+    override fun destroy() {
         activitiesMap.clear()
         loadingShowing.clear()
         instance = null
@@ -515,7 +504,6 @@ class DynamicLoaderCore {
         private var activity: AppCompatActivity
     ) : LifecycleObserver {
 
-
         @OnLifecycleEvent(Lifecycle.Event.ON_DESTROY)
         fun onDestroy() {
             val activityName = activity::class.java.name
@@ -528,7 +516,8 @@ class DynamicLoaderCore {
                     }
                 }
                 if (activity.isFinishing) {
-                    val copyOfMap = loadShowing.clone() as HashMap<Pair<String, Int>, RelativeLayout>
+                    val copyOfMap =
+                        loadShowing.clone() as HashMap<Pair<String, Int>, RelativeLayout>
                     for (entry: Map.Entry<Pair<String, Int>, RelativeLayout> in copyOfMap) {
                         if (entry.key.first == activityName) {
                             loadShowing.remove(entry.key)
@@ -542,4 +531,60 @@ class DynamicLoaderCore {
         }
 
     }
+}
+
+interface DynamicLoaderCoreInterface {
+    fun init(activity: AppCompatActivity, views: Array<View>? = null)
+    fun setViews(activity: AppCompatActivity, views: Array<View>? = null)
+
+    fun showLoading(
+        activity: AppCompatActivity,
+        view: View,
+        backgroundColor: Int? = null,
+        progressColor: Int? = null
+    )
+
+    fun showLoading(
+        activity: AppCompatActivity,
+        view: View,
+        backgroundColor: Int? = null,
+        animationName: String
+    )
+
+    fun showLoadingFromResources(
+        activity: AppCompatActivity,
+        view: View,
+        backgroundColor: Int,
+        progressColor: Int
+    )
+
+    fun showLoadingFromResources(
+        activity: AppCompatActivity,
+        view: View, @ColorRes backgroundColor: Int,
+        animationName: String
+    )
+
+    fun showAllLoading(
+        activity: AppCompatActivity,
+        backgroundColor: Int? = null,
+        progressColor: Int? = null
+    )
+
+    fun showAllLoading(
+        activity: AppCompatActivity,
+        backgroundColor: Int? = null,
+        animationName: String
+    )
+
+    fun showAllLoadingFromResources(
+        activity: AppCompatActivity,
+        @ColorRes backgroundColor: Int,
+        @ColorRes progressColor: Int
+    )
+
+    fun dismissLoading(activity: AppCompatActivity, view: View)
+
+    fun dismissAllLoading(activity: AppCompatActivity)
+
+    fun destroy()
 }

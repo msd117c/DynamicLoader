@@ -8,7 +8,7 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
 import com.msd.dynamicloader.DynamicLoaderCore
 
-open class LoaderAppCompatActivity : AppCompatActivity() {
+open class LoaderAppCompatActivity : AppCompatActivity(), LoaderAppCompatActivityInterface {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -19,7 +19,7 @@ open class LoaderAppCompatActivity : AppCompatActivity() {
      * Call this method to set the desired views to make them load after
      * @param views Group of views which you want to be available for loading operations
      */
-    fun setViews(views: Array<View>) {
+    override fun setViews(views: Array<View>) {
         DynamicLoaderCore.getInstance().setViews(this, views)
     }
 
@@ -31,10 +31,10 @@ open class LoaderAppCompatActivity : AppCompatActivity() {
      * @param backgroundColor If not specified, colorPrimaryDark
      * @param progressColor If not specified, colorAccent
      */
-    fun showLoading(
+    override fun showLoading(
         view: View,
-        @ColorInt backgroundColor: Int? = null,
-        @ColorInt progressColor: Int? = null
+        @ColorInt backgroundColor: Int?,
+        @ColorInt progressColor: Int?
     ) {
         DynamicLoaderCore.getInstance()
             .showLoading(this, view, backgroundColor, progressColor)
@@ -48,7 +48,7 @@ open class LoaderAppCompatActivity : AppCompatActivity() {
      * @param backgroundColor If not specified, colorPrimaryDark
      * @param animationName Animation json file name
      */
-    fun showLoading(view: View, backgroundColor: Int? = null, animationName: String) {
+    override fun showLoading(view: View, backgroundColor: Int?, animationName: String) {
         DynamicLoaderCore.getInstance()
             .showLoading(this, view, backgroundColor, animationName)
     }
@@ -61,7 +61,7 @@ open class LoaderAppCompatActivity : AppCompatActivity() {
      * @param backgroundColor It must be specified and must exist on colors.xml
      * @param progressColor It must be specified and must exist on colors.xml
      */
-    fun showLoadingFromResources(
+    override fun showLoadingFromResources(
         view: View,
         backgroundColor: Int,
         progressColor: Int
@@ -79,7 +79,10 @@ open class LoaderAppCompatActivity : AppCompatActivity() {
      * @param backgroundColor It must be specified and must exist on colors.xml
      * @param animationName Animation json file name
      */
-    fun showLoadingFromResources(view: View, @ColorRes backgroundColor: Int, animationName: String) {
+    override fun showLoadingFromResources(
+        view: View, @ColorRes backgroundColor: Int,
+        animationName: String
+    ) {
         val backgroundColorInt = ContextCompat.getColor(this, backgroundColor)
         DynamicLoaderCore.getInstance()
             .showLoading(this, view, backgroundColorInt, animationName)
@@ -93,9 +96,9 @@ open class LoaderAppCompatActivity : AppCompatActivity() {
      * @param backgroundColor If not specified, colorPrimaryDark
      * @param progressColor If not specified, colorAccent
      */
-    fun showAllLoading(
-        backgroundColor: Int? = null,
-        progressColor: Int? = null
+    override fun showAllLoading(
+        backgroundColor: Int?,
+        progressColor: Int?
     ) {
         val backgroundColorInt = try {
             ContextCompat.getColor(this, backgroundColor!!)
@@ -118,8 +121,8 @@ open class LoaderAppCompatActivity : AppCompatActivity() {
      * @param backgroundColor If not specified, colorPrimaryDark
      * @param animationName Animation json file name
      */
-    fun showAllLoading(
-        backgroundColor: Int? = null,
+    override fun showAllLoading(
+        backgroundColor: Int?,
         animationName: String
     ) {
         val backgroundColorInt = try {
@@ -139,7 +142,7 @@ open class LoaderAppCompatActivity : AppCompatActivity() {
      * @param backgroundColor It must be specified and must exist on colors.xml
      * @param progressColor It must be specified and must exist on colors.xml
      */
-    fun showAllLoadingFromResources(
+    override fun showAllLoadingFromResources(
         @ColorRes backgroundColor: Int,
         @ColorRes progressColor: Int
     ) {
@@ -160,9 +163,9 @@ open class LoaderAppCompatActivity : AppCompatActivity() {
      * @param backgroundColor If not specified, colorPrimaryDark
      * @param animationName Animation json file name
      */
-    fun showAllLoadingFromResources(
+    override fun showAllLoadingFromResources(
         @ColorRes backgroundColor: Int,
-       animationName: String
+        animationName: String
     ) {
         DynamicLoaderCore.getInstance()
             .showAllLoading(
@@ -176,7 +179,7 @@ open class LoaderAppCompatActivity : AppCompatActivity() {
      * This method remove loading view over specified item if exists.
      * @param view Desired view to remove it's loading view
      */
-    fun dismissLoading(view: View) {
+    override fun dismissLoading(view: View) {
         DynamicLoaderCore.getInstance().dismissLoading(this, view)
     }
 
@@ -184,8 +187,48 @@ open class LoaderAppCompatActivity : AppCompatActivity() {
      * This method is like dismissLoading but it will affect every view added from init or setView methods.
      * Views added making use of showLoading are also included.
      */
-    fun dismissAllLoading() {
+    override fun dismissAllLoading() {
         DynamicLoaderCore.getInstance().dismissAllLoading(this)
     }
 
+}
+
+interface LoaderAppCompatActivityInterface {
+    fun setViews(views: Array<View>)
+    fun showLoading(
+        view: View,
+        @ColorInt backgroundColor: Int? = null,
+        @ColorInt progressColor: Int? = null
+    )
+
+    fun showLoading(view: View, backgroundColor: Int? = null, animationName: String)
+    fun showLoadingFromResources(
+        view: View,
+        backgroundColor: Int,
+        progressColor: Int
+    )
+
+    fun showLoadingFromResources(view: View, @ColorRes backgroundColor: Int, animationName: String)
+    fun showAllLoading(
+        backgroundColor: Int? = null,
+        progressColor: Int? = null
+    )
+
+    fun showAllLoading(
+        backgroundColor: Int? = null,
+        animationName: String
+    )
+
+    fun showAllLoadingFromResources(
+        @ColorRes backgroundColor: Int,
+        @ColorRes progressColor: Int
+    )
+
+    fun showAllLoadingFromResources(
+        @ColorRes backgroundColor: Int,
+        animationName: String
+    )
+
+    fun dismissLoading(view: View)
+    fun dismissAllLoading()
 }
