@@ -41,7 +41,7 @@ class DynamicLoaderCore {
      * This object will hold all activities and it's views references
      */
     private var activitiesMap = HashMap<String, HashMap<View, RelativeLayout>>()
-    
+
     /**
      * This attribute will be used to handle lifecycle changes
      */
